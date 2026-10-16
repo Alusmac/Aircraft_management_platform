@@ -5,6 +5,11 @@ from aircraft.offers import AdvertisingOffer
 from integrations.payment_adapters import (FirstPaymentSDK, FirstPaymentAdapter, SecondPaymentSDK,
                                            SecondPaymentAdapter, )
 from notifications.notifications import (EmailChannel, SMSChannel, PushChannel, OrderCreated, PaymentFailed, )
+from aircraft.fleet import AircraftUnit, AircraftFleet
+from aircraft.decorators import BasicInspection, EngineInspection, AvionicsInspection
+from flights.facade import FlightOperationsFacade
+from aircraft.flyweight import Aircraft, AircraftModelFactory
+from aircraft.proxy import RemoteAircraftCatalog, AircraftCatalogProxy
 
 
 # ======== Factory Method
@@ -101,6 +106,7 @@ def demonstrate_singleton():
 
     print("Currency through config2:", config2.currency)
 
+
 # ======== Adapter
 def demonstrate_adapter():
     """ function of demonstrating Adapter. """
@@ -127,6 +133,104 @@ def demonstrate_notifications() -> None:
     another_notification.notify()
 
 
+# ======= Composite
+def demonstrate_composite() -> None:
+    """function of demonstrating composite."""
+    print("\n=== COMPOSITE ===")
+
+    aircraft_fleet = AircraftFleet("Main Fleet")
+    passenger_fleet = AircraftFleet("Passenger Fleet")
+    cargo_fleet = AircraftFleet("Cargo Fleet")
+
+    passenger_fleet.add(
+        AircraftUnit("Boeing 737", 100_000_000)
+    )
+    passenger_fleet.add(
+        AircraftUnit("Airbus A320", 110_000_000)
+    )
+
+    cargo_fleet.add(
+        AircraftUnit("Boeing 777F", 150_000_000)
+    )
+
+    aircraft_fleet.add(passenger_fleet)
+    aircraft_fleet.add(cargo_fleet)
+
+    print("Aircraft count:", aircraft_fleet.count_aircraft())
+    print("Fleet value:", aircraft_fleet.total_value())
+
+
+# ====== Decorator
+def demonstrate_decorator() -> None:
+    """function of demonstrating decorator."""
+    print("\n=== DECORATOR ===")
+
+    inspection = BasicInspection()
+    inspection = EngineInspection(inspection)
+    inspection = AvionicsInspection(inspection)
+
+    print(inspection.inspect())
+
+
+# ======== Facade
+def demonstrate_facade() -> None:
+    """function of demonstrating facade."""
+    print("\n=== FACADE ===")
+
+    facade = FlightOperationsFacade()
+
+    results = facade.prepare_flight(aircraft="Boeing 737", amount=1500.0, )
+
+    for result in results:
+        print(result)
+
+
+# ====== Flyweight
+def demonstrate_flyweight() -> None:
+    """function of demonstrating flyweight."""
+    print("\n=== FLYWEIGHT ===")
+
+    factory = AircraftModelFactory()
+
+    model_1 = factory.get_model(
+        "Boeing",
+        "737",
+        "turbofan",
+    )
+
+    model_2 = factory.get_model(
+        "Boeing",
+        "737",
+        "turbofan",
+    )
+
+    aircraft_1 = Aircraft(
+        "N101AA", "Active", 1200, model_1
+    )
+
+    aircraft_2 = Aircraft(
+        "N102AA", "Maintenance", 2400, model_2
+    )
+
+    print(aircraft_1.model is aircraft_2.model)
+    print(aircraft_1.registration)
+    print(aircraft_2.registration)
+    print("Unique models:", len(factory._models))
+
+
+# ====== Proxy
+def demonstrate_proxy() -> None:
+    """function of demonstrating proxy."""
+    print("\n=== PROXY ===")
+
+    remote_catalog = RemoteAircraftCatalog()
+    catalog = AircraftCatalogProxy(remote_catalog)
+
+    print(catalog.get_aircraft("N101AA"))
+    print(catalog.get_aircraft("N101AA"))
+    print(catalog.get_aircraft("N202BB"))
+
+
 def main():
     demonstrate_factory_method()
     demonstrate_abstract_factory()
@@ -135,6 +239,11 @@ def main():
     demonstrate_singleton()
     demonstrate_adapter()
     demonstrate_notifications()
+    demonstrate_composite()
+    demonstrate_decorator()
+    demonstrate_facade()
+    demonstrate_flyweight()
+    demonstrate_proxy()
 
 
 if __name__ == "__main__":
