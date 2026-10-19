@@ -10,6 +10,17 @@ from aircraft.decorators import BasicInspection, EngineInspection, AvionicsInspe
 from flights.facade import FlightOperationsFacade
 from aircraft.flyweight import Aircraft, AircraftModelFactory
 from aircraft.proxy import RemoteAircraftCatalog, AircraftCatalogProxy
+from flights.flight_checks import TechnicalCheck, DocumentCheck, CrewCheck, WeatherCheck
+from flights.commands import FlightPlan, AddAircraftCommand, CommandManager
+from flights.interpret import FuelRule
+from flights.iterator import AircraftCatalog
+from flights.mediator import FlightMediator
+from flights.memento import MementoFlight
+from flights.observer import Flight, PassengerNotification, FlightLogger
+from flights.state import StateFlight
+from aircraft.strategy import PassengerCapacityStrategy, CargoCapacityStrategy, AircraftSelector
+from reports.template_method import TextReport, CSVReport
+from aircraft.visitor import PassengerPlane, CargoPlane, MaintenanceCostVisitor
 
 
 # ======== Factory Method
@@ -231,6 +242,164 @@ def demonstrate_proxy() -> None:
     print(catalog.get_aircraft("N202BB"))
 
 
+# ======== Chain of Responsibility
+def demonstrate_chain() -> None:
+    """function of demonstrating chain of responsibility."""
+    print("\n=== CHAIN ===")
+    technical = TechnicalCheck()
+    documents = DocumentCheck()
+    crew = CrewCheck()
+    weather = WeatherCheck()
+
+    technical.set_next(documents).set_next(crew).set_next(weather)
+
+    aircraft = {
+        "technical_ready": True,
+        "documents_valid": True,
+        "crew_available": True,
+        "weather_suitable": True,
+    }
+
+    print(technical.handle(aircraft))
+
+
+# ======Command
+def demonstrate_command() -> None:
+    """function of demonstrating command."""
+    print("\n=== COMMAND ===")
+
+    flight_plan = FlightPlan()
+    manager = CommandManager()
+
+    command = AddAircraftCommand(
+        flight_plan,
+        "Boeing 737",
+    )
+
+    manager.execute(command)
+    print(flight_plan.aircraft)
+
+    manager.undo_last()
+    print(flight_plan.aircraft)
+
+
+# ==== Interpreter
+def demonstrate_interpret() -> None:
+    """function of demonstrating iteration."""
+    print("\n=== INTERPRETER ===")
+
+    rule = FuelRule()
+
+    print(rule.interpret(6000))
+    print(rule.interpret(3000))
+
+
+# ===== Iterarator
+def demonstrate_iterator() -> None:
+    """function of demonstrating iteration."""
+    print("\n=== ITERATOR ===")
+
+    catalog = AircraftCatalog()
+
+    for aircraft in catalog:
+        print(aircraft)
+
+
+# ===== Mediator
+def demonstrate_mediator() -> None:
+    """function of demonstrating mediator."""
+    print("\n=== MEDIATOR ===")
+    mediator = FlightMediator()
+    print(mediator.prepare_flight())
+
+
+# ======= Memento
+def demonstrate_memento() -> None:
+    """function of demonstrating memento."""
+    print("\n=== MEMENTO ===")
+    flight = MementoFlight("Scheduled")
+
+    saved_status = flight.save()
+
+    flight.status = "Cancelled"
+    print(flight.status)
+
+    flight.restore(saved_status)
+    print(flight.status)
+
+
+# ====== Observer
+def demonstrate_observer() -> None:
+    """function of demonstrating observer."""
+    print("\n=== OBSERVER ===")
+    flight = Flight()
+
+    flight.subscribe(PassengerNotification())
+    flight.subscribe(FlightLogger())
+
+    flight.change_status("Delayed")
+
+
+# ===== State
+def demonstrate_state() -> None:
+    """function of demonstrating state."""
+    print("\n=== STATE ===")
+    flight = StateFlight()
+
+    print(flight.board())
+    print(flight.take_off())
+    print(flight.status)
+
+
+# ===== Strategy
+def demonstrate_strategy() -> None:
+    """function of demonstrating strategy."""
+    print("\n=== STRATEGY ===")
+
+    aircraft = [
+        {
+            "model": "Boeing 737",
+            "capacity": 180,
+            "cargo_capacity": 3,
+        },
+        {
+            "model": "Boeing 777F",
+            "capacity": 0,
+            "cargo_capacity": 100,
+        },
+    ]
+
+    selector = AircraftSelector(PassengerCapacityStrategy())
+    print(selector.select_aircraft(aircraft))
+
+    selector = AircraftSelector(CargoCapacityStrategy())
+    print(selector.select_aircraft(aircraft))
+
+
+# ====== Template Method
+def demonstrate_template() -> None:
+    """function of demonstrating template."""
+    print("\n=== TEMPLATE ===")
+
+    print(TextReport().generate())
+    print("---")
+    print(CSVReport().generate())
+
+
+# ======= Visitor
+def demonstrate_visitor() -> None:
+    """function of demonstrating visitor."""
+    print("\n=== VISITOR ===")
+
+    visitor = MaintenanceCostVisitor()
+
+    passenger_plane = PassengerPlane()
+    cargo_plane = CargoPlane()
+
+    print(passenger_plane.accept(visitor))
+    print(cargo_plane.accept(visitor))
+
+
 def main():
     demonstrate_factory_method()
     demonstrate_abstract_factory()
@@ -244,6 +413,17 @@ def main():
     demonstrate_facade()
     demonstrate_flyweight()
     demonstrate_proxy()
+    demonstrate_chain()
+    demonstrate_command()
+    demonstrate_interpret()
+    demonstrate_iterator()
+    demonstrate_mediator()
+    demonstrate_memento()
+    demonstrate_observer()
+    demonstrate_state()
+    demonstrate_strategy()
+    demonstrate_template()
+    demonstrate_visitor()
 
 
 if __name__ == "__main__":
